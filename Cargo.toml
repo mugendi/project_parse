@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Anthony Mugendi <https://github.com/mugendi>"]
 repository = "https://github.com/mugendi/project_parse"
+license = "MIT"
+description = "Parse code project directories, detect main language, count lines of code and more."
 
 
 [dependencies]
