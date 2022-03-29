@@ -1,0 +1,19 @@
+[package]
+name = "project_parse"
+version = "0.1.0"
+edition = "2021"
+authors = ["Anthony Mugendi <https://github.com/mugendi>"]
+
+
+[dependencies]
+loc = "0.5.0"
+ureq = "2.4.0"
+wax = "0.4.0"
+anyhow = "1"
+thiserror = "1.0.30"
+once_cell = "1.10.0"
+walkdir = "2"
+globset = "0.4.1"
+regex = "1"
+serde = {version = "1.0", features = ["derive"]}
+serde_json = {version = "1.0", features = ["raw_value"]}
