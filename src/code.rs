@@ -44,7 +44,7 @@ fn code_stats(e: &DirEntry) -> Result<(Lang, Count)> {
     Ok((lang, count))
 }
 
-fn is_hidden(entry: &DirEntry) -> bool {
+pub fn is_hidden(entry: &DirEntry) -> bool {
     entry
         .file_name()
         .to_str()
@@ -57,7 +57,7 @@ fn is_file(entry: &DirEntry) -> bool {
     entry.metadata().expect("Could not get metadata").is_file()
 }
 
-fn is_ignored(ruleset: &ruleset::RuleSet, entry: &DirEntry) -> bool {
+pub fn is_ignored(ruleset: &ruleset::RuleSet, entry: &DirEntry) -> bool {
     let e = entry;
     let is_dir = e.metadata().expect("Could not get metadata").is_dir();
 
@@ -78,6 +78,7 @@ pub fn dir_stats(
 
     match ruleset {
         Some(ruleset) => {
+
             for entry in walker.filter_entry(|e| !is_hidden(e) && !is_ignored(&ruleset, e)) {
                 let e = entry?;
 

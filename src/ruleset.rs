@@ -26,7 +26,7 @@ use std::path::{Path, PathBuf};
 ///
 // #[derive(Copy)]
 
-// #[derive(Debug)]
+#[derive(Clone)]
 pub struct RuleSet {
     root: PathBuf,
     pub(crate) rules: Vec<Rule>,

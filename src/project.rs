@@ -15,8 +15,9 @@
 use anyhow::{anyhow, Result};
 use loc::Count;
 use regex::Regex;
-use std::{collections::HashMap, fs::read_to_string, path::PathBuf};
+use std::{collections::HashMap, fs::read_to_string, iter::Iterator, path::PathBuf};
 use thiserror::Error;
+use walkdir::{DirEntry, FilterEntry, WalkDir};
 
 use super::code;
 use super::detector;
@@ -30,7 +31,7 @@ pub enum ProjectError {
     NotFound(String),
 }
 
-/// Project struct 
+/// Project struct
 #[derive(Debug)]
 pub struct Project {
     /// project directory path
@@ -54,7 +55,6 @@ pub struct IsIgnored {
     is_dir: bool,
     is_ignored: bool,
 }
-
 
 impl Project {
     // create new project
@@ -93,7 +93,7 @@ impl Project {
 
     /// Parses the Project initialized with [method.new]
     /// Parsing will perform the following key tasks:
-    /// - Detect main project language(s) 
+    /// - Detect main project language(s)
     /// - Generate a generic gitignore based on [gitignores](https://github.com/starship/starship/tree/master/src/configs)
     /// - Generate Regexp rules from the generic gitignore that are used to check if files and directories within the project should be git-ignored.
     pub fn parse(&mut self) -> Result<()> {
@@ -114,6 +114,39 @@ impl Project {
         self.code_stats = stats.clone();
 
         Ok(stats)
+    }
+
+    /// Rets content of project dir whilst respecting all the gitignore rules applied
+    /// Returns a walkdir::DirEntry vector that you can iterate through to pick out individual items
+    /// **Example**
+    /// ```no_run
+    /// for  entry in project.get_content()?{
+    ///    println!(" {:?}", entry);
+    /// }
+    /// ```
+    pub fn get_content(&self) -> Result<Vec<DirEntry>> {
+        let dir_str = self.dir.to_str().unwrap();
+        let walker = WalkDir::new(dir_str).into_iter();
+        let ruleset = self.gitignore_ruleset.as_ref().unwrap();
+
+        let mut res: Vec<DirEntry> = vec![];
+
+        for entry in walker.filter_entry(|e| !code::is_hidden(e) && !code::is_ignored(&ruleset, e))
+        {
+            // let e = &entry.unwrap();
+            match &entry {
+                Ok(e) => {
+                    // println!("{:?}", e)
+                    let d = e.clone();
+                    res.push(d);
+                }
+                _ => (),
+            }
+        }
+
+        // let res = res.into_iter();
+        // walker
+        Ok(res)
     }
 
     /// Check if directory or file within the project folder is ignored based on:
@@ -167,7 +200,7 @@ impl Project {
 
     /// Allows you to set your own gitignore rules by passing them as a &str param
     /// You can set update_existing to true to update the generic gitignore from [gitignores](https://github.com/starship/starship/tree/master/src/configs) or false to overwrite it
-    /// **Example** 
+    /// **Example**
     /// ```no_run
     /// let ignore_str = "ignore/this/file.js";
     /// project.set_gitignore(ignore_str, &true)?;
@@ -225,11 +258,9 @@ impl Project {
             // update rules
             self.get_rules()?;
         }
-        
 
         Ok(())
     }
- 
     fn get_rules(&mut self) -> Result<()> {
         let dir = &self.dir;
         let empty_ruleset = ruleset::RuleSet::new(&dir, vec![""])?;
