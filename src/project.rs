@@ -15,7 +15,7 @@
 use anyhow::{anyhow, Result};
 use loc::Count;
 use regex::Regex;
-use std::{collections::HashMap, fs::read_to_string, iter::Iterator, path::PathBuf};
+use std::{collections::HashMap, fs::read_to_string, path::PathBuf};
 use thiserror::Error;
 use walkdir::{DirEntry, WalkDir};
 
