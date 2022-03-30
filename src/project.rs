@@ -17,7 +17,7 @@ use loc::Count;
 use regex::Regex;
 use std::{collections::HashMap, fs::read_to_string, iter::Iterator, path::PathBuf};
 use thiserror::Error;
-use walkdir::{DirEntry, FilterEntry, WalkDir};
+use walkdir::{DirEntry, WalkDir};
 
 use super::code;
 use super::detector;
@@ -118,27 +118,65 @@ impl Project {
 
     /// Rets content of project dir whilst respecting all the gitignore rules applied
     /// Returns a walkdir::DirEntry vector that you can iterate through to pick out individual items
+    /// The boolean arguments show_hidden and show_ignored add extra filtering to the Directory Entries returned    
     /// **Example**
     /// ```no_run
-    /// for  entry in project.get_content()?{
-    ///    println!(" {:?}", entry);
+    /// for  entry in project.get_content(&false, &false)?{
+    ///    println!("Entry {:?}", entry);
     /// }
     /// ```
-    pub fn get_content(&self) -> Result<Vec<DirEntry>> {
+    pub fn get_content(&self, show_hidden: &bool, show_ignored: &bool) -> Result<Vec<DirEntry>> {
         let dir_str = self.dir.to_str().unwrap();
+
         let walker = WalkDir::new(dir_str).into_iter();
         let ruleset = self.gitignore_ruleset.as_ref().unwrap();
 
         let mut res: Vec<DirEntry> = vec![];
 
-        for entry in walker.filter_entry(|e| !code::is_hidden(e) && !code::is_ignored(&ruleset, e))
-        {
+        for entry in walker.filter_entry(|e| {
+            if e.depth() == 0 {
+                return true;
+            }
+
+            let mut filters: Vec<bool> = vec![];
+
+            // filters.push( = !code::is_hidden(e) && !code::is_ignored(&ruleset, e));
+
+            // if we need to show hidden
+            if *show_hidden {
+                if !code::is_hidden(e) {
+                    filters.push(false);
+                    // return false;
+                } else {
+                    filters.push(true);
+                }
+            }
+
+            if *show_ignored {
+                if !code::is_ignored(&ruleset, e) {
+                    filters.push(false);
+                } else {
+                    filters.push(true);
+                }
+            }
+
+            // println!("{:?}", filters.contains(&false));
+
+            // default avoid hidden files && ignored files too
+            if filters.len() == 0 {
+                filters.push(!code::is_hidden(e) && !code::is_ignored(&ruleset, e))
+            }
+
+            !filters.contains(&false)
+        }) {
             // let e = &entry.unwrap();
             match &entry {
                 Ok(e) => {
-                    // println!("{:?}", e)
-                    let d = e.clone();
-                    res.push(d);
+                    // do not return project dir
+                    if e.depth() > 0 {
+                        let d = e.clone();
+                        res.push(d);
+                    }
                 }
                 _ => (),
             }
