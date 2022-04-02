@@ -15,7 +15,11 @@
 use anyhow::{anyhow, Result};
 use loc::Count;
 use regex::Regex;
-use std::{collections::HashMap, fs::read_to_string, path::PathBuf};
+use std::{
+    collections::HashMap,
+    fs::read_to_string,
+    path::{Path, PathBuf},
+};
 use thiserror::Error;
 use walkdir::{DirEntry, WalkDir};
 
@@ -117,21 +121,28 @@ impl Project {
     }
 
     /// Rets content of project dir whilst respecting all the gitignore rules applied
-    /// Returns a walkdir::DirEntry vector that you can iterate through to pick out individual items
+    /// Returns a PathBuf vector that you can iterate through to pick out individual items
     /// The boolean arguments show_hidden and show_ignored add extra filtering to the Directory Entries returned    
+    /// If ```parents_only``` is set to true, then only parent directories are returned. For example, if **/path/parent** is added to the Return vector, then all its children **/path/parent/file-1.rs**, **/path/parent/directory/** and so on will not be added to vector
     /// **Example**
     /// ```no_run
-    /// for  entry in project.get_content(&false, &false)?{
+    /// for  entry in project.get_content(&false, &false, &true)?{
     ///    println!("Entry {:?}", entry);
     /// }
     /// ```
-    pub fn get_content(&self, show_hidden: &bool, show_ignored: &bool) -> Result<Vec<DirEntry>> {
+    pub fn get_content(
+        &self,
+        show_hidden: &bool,
+        show_ignored: &bool,
+        parents_only: &bool,
+    ) -> Result<Vec<PathBuf>> {
         let dir_str = self.dir.to_str().unwrap();
 
         let walker = WalkDir::new(dir_str).into_iter();
         let ruleset = self.gitignore_ruleset.as_ref().unwrap();
 
-        let mut res: Vec<DirEntry> = vec![];
+        let mut res: Vec<PathBuf> = vec![];
+        // let mut res: Vec<DirEntry> = vec![];
 
         for entry in walker.filter_entry(|e| {
             if e.depth() == 0 {
@@ -175,7 +186,17 @@ impl Project {
                     // do not return project dir
                     if e.depth() > 0 {
                         let d = e.clone();
-                        res.push(d);
+                        if *parents_only {
+                            let p = d.path().parent().unwrap().to_path_buf();
+                            // println!("{:?}=>{:?}", p, res.contains(&p));
+                            if !res.contains(&p) {
+                                res.push(d.path().to_path_buf());
+                            }
+                        }
+                        else{
+                            res.push(d.path().to_path_buf());
+                        }
+                        
                     }
                 }
                 _ => (),
