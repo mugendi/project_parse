@@ -18,10 +18,10 @@ use regex::Regex;
 use std::{
     collections::HashMap,
     fs::read_to_string,
-    path::{Path, PathBuf},
+    path::{ PathBuf},
 };
 use thiserror::Error;
-use walkdir::{DirEntry, WalkDir};
+use walkdir::{ WalkDir};
 
 use super::code;
 use super::detector;
